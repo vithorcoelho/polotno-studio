@@ -9,10 +9,7 @@ import {
   Popover,
 } from '@blueprintjs/core';
 
-import FaGithub from '@meronex/icons/fa/FaGithub';
 import FaDiscord from '@meronex/icons/fa/FaDiscord';
-import FaTwitter from '@meronex/icons/fa/FaTwitter';
-import BiCodeBlock from '@meronex/icons/bi/BiCodeBlock';
 import MdcCloudAlert from '@meronex/icons/mdc/MdcCloudAlert';
 import MdcCloudCheck from '@meronex/icons/mdc/MdcCloudCheck';
 import MdcCloudSync from '@meronex/icons/mdc/MdcCloudSync';
@@ -22,6 +19,7 @@ import { useProject } from '../project';
 
 import { FileMenu } from './file-menu';
 import { DownloadButton } from './download-button';
+import { ViewJsonButton } from './view-json-button';
 import { PostProcessButton } from './post-process-button';
 import { UserMenu } from './user-menu';
 import { CloudWarning } from '../cloud-warning';
@@ -104,35 +102,9 @@ export default observer(({ store }) => {
         <Navbar.Group align={Alignment.RIGHT}>
           <Status project={project} />
 
-          <AnchorButton
-            href="https://polotno.com"
-            target="_blank"
-            minimal
-            icon={
-              <BiCodeBlock className="bp5-icon" style={{ fontSize: '20px' }} />
-            }
-          >
-            API
-          </AnchorButton>
-
-          <AnchorButton
-            minimal
-            href="https://github.com/lavrton/polotno-studio"
-            target="_blank"
-            icon={
-              <FaGithub className="bp5-icon" style={{ fontSize: '20px' }} />
-            }
-          ></AnchorButton>
-          <AnchorButton
-            minimal
-            href="https://twitter.com/lavrton"
-            target="_blank"
-            icon={
-              <FaTwitter className="bp5-icon" style={{ fontSize: '20px' }} />
-            }
-          ></AnchorButton>
           <NavbarDivider />
           <PostProcessButton store={store} />
+          <ViewJsonButton store={store} />
           <DownloadButton store={store} />
           <UserMenu store={store} project={project} />
           {/* <NavbarHeading>Polotno Studio</NavbarHeading> */}
