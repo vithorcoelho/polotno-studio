@@ -9,6 +9,7 @@ import './index.css';
 import App from './App';
 import './logger';
 import { ErrorBoundary } from 'react-error-boundary';
+import { setupCustomTextAI } from './ai-text-interceptor';
 
 if (window.location.host !== 'studio.polotno.com') {
   console.log(
@@ -23,6 +24,9 @@ But feel free to use this repository as a reference for your own project and to 
 }
 
 unstable_setAnimationsEnabled(true);
+
+// Configurar AI Write personalizado com OpenAI
+setupCustomTextAI();
 
 const store = createStore({ key: 'nFA5H9elEytDyPyvKL7T' });
 window.store = store;
