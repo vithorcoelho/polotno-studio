@@ -32,10 +32,16 @@ app.post('/api/generate-pdf', async (req, res) => {
     
     // Se temos dimensões específicas, configurar viewport exato
     if (pageSize && pageSize.width && pageSize.height) {
+      // Arredondar dimensões para valores inteiros (Playwright não aceita decimais)
+      const roundedWidth = Math.round(pageSize.width);
+      const roundedHeight = Math.round(pageSize.height);
+      
       await page.setViewportSize({
-        width: pageSize.width,
-        height: pageSize.height
+        width: roundedWidth,
+        height: roundedHeight
       });
+      
+      console.log(`Viewport configurado: ${roundedWidth}x${roundedHeight}px (original: ${pageSize.width}x${pageSize.height})`);
     }
     
     // Definir conteúdo HTML
@@ -74,10 +80,10 @@ app.post('/api/generate-pdf', async (req, res) => {
     
     // Se temos dimensões específicas, usar elas
     if (pageSize && pageSize.width && pageSize.height) {
-      // Usar dimensões exatas em pixels
-      pdfOptions.width = pageSize.width;
-      pdfOptions.height = pageSize.height;
-      console.log(`Configurando PDF com dimensões: ${pageSize.width}x${pageSize.height}px`);
+      // Para PDF, usar dimensões originais (com decimais) para máxima precisão
+      pdfOptions.width = `${pageSize.width}px`;
+      pdfOptions.height = `${pageSize.height}px`;
+      console.log(`Configurando PDF com dimensões precisas: ${pageSize.width}x${pageSize.height}px`);
     } else {
       // Fallback para A4 se não tiver dimensões
       pdfOptions.format = 'A4';

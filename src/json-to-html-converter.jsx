@@ -212,7 +212,7 @@ const wrapInCompleteHTMLStructure = (polotnoHtml, store) => {
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=${store.width}, height=${store.height}, initial-scale=1.0">
+    <meta name="viewport" content="width=${Math.round(store.width)}, height=${Math.round(store.height)}, initial-scale=1.0">
     <title>Polotno Export - ${store.width}x${store.height}</title>
     <style>
         * {
@@ -326,7 +326,8 @@ const JsonToHtmlConverter = () => {
       const store = createStore({
         width: jsonData.width || 800,
         height: jsonData.height || 600,
-        unit: jsonData.unit || 'px'
+        unit: jsonData.unit || 'px',
+        dpi: jsonData.dpi || 72
       });
 
       // Load JSON into store
