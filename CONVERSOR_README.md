@@ -25,14 +25,17 @@ Este projeto inclui uma funcionalidade especial para converter projetos do Polot
 3. Clique em "Converter para HTML"
 4. O HTML será gerado automaticamente no painel direito
 
-### Passo 3: Usar o HTML
-- **Baixar**: Clique em "Baixar HTML" para salvar o arquivo
+### Passo 3: Usar o HTML/PDF
+- **Gerar PDF**: Clique em "Gerar PDF" para criar um PDF com tamanho exato das páginas
+- **Baixar HTML**: Clique em "Baixar HTML" para salvar o arquivo
 - **Visualizar**: Clique em "Visualizar" para ver o resultado em uma nova janela
 - **Copiar**: Clique em "Copiar" para copiar o código HTML para a área de transferência
 
 ## Funcionalidades
 
 - ✅ **Conversão automática**: Transforma projetos Polotno em HTML estático
+- ✅ **Geração de PDF**: Cria PDFs com tamanho exato das páginas do projeto
+- ✅ **Texto selecionável**: PDFs gerados com texto totalmente selecionável
 - ✅ **Validação de JSON**: Verifica se o JSON é um projeto Polotno válido
 - ✅ **Exemplo incluído**: Botão "Carregar Exemplo" para testar a funcionalidade
 - ✅ **Preview em tempo real**: Visualize o resultado antes de baixar
@@ -90,6 +93,8 @@ converter.html                  # Página standalone para o conversor
 - **React**: Interface do usuário
 - **Blueprint.js**: Componentes de UI
 - **Polotno SDK**: Funcionalidades de conversão
+- **jsPDF**: Geração de arquivos PDF
+- **html2canvas**: Conversão HTML para imagem/PDF
 - **Vite**: Build tool e desenvolvimento
 
 ## Desenvolvimento

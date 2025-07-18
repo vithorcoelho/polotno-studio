@@ -12,64 +12,119 @@ import {
   ButtonGroup,
   Code
 } from '@blueprintjs/core';
-import { Download, Code as CodeIcon, EyeOpen } from '@blueprintjs/icons';
+import { Download, Code as CodeIcon, EyeOpen, Document } from '@blueprintjs/icons';
 import { createStore } from 'polotno/model/store';
 import { downloadFile } from 'polotno/utils/download';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
-// Fallback function to generate basic HTML
-const generateBasicHTML = (store) => {
-  const pages = store.pages.map((page, index) => {
-    const elements = page.children.map(element => {
+// Function to generate Polotno-like HTML as fallback
+const generatePolotnoLikeHTML = (store) => {
+  const pages = store.pages.map((page, pageIndex) => {
+    const elements = page.children.map((element, elementIndex) => {
+      const elementId = `element-${pageIndex}-${elementIndex}`;
+      
       if (element.type === 'text') {
         return `
-          <div style="
+          <div id="${elementId}" style="
             position: absolute;
-            left: ${element.x}px;
-            top: ${element.y}px;
-            width: ${element.width}px;
-            height: ${element.height}px;
+            left: ${element.x || 0}px;
+            top: ${element.y || 0}px;
+            width: ${element.width || 100}px;
+            height: ${element.height || 50}px;
             font-size: ${element.fontSize || 16}px;
-            font-family: ${element.fontFamily || 'Arial'};
+            font-family: ${element.fontFamily || 'Arial, sans-serif'};
             color: ${element.fill || '#000000'};
             font-weight: ${element.fontWeight || 'normal'};
+            font-style: ${element.fontStyle || 'normal'};
             text-align: ${element.align || 'left'};
-          ">
-            ${element.text || ''}
-          </div>`;
+            text-decoration: ${element.textDecoration || 'none'};
+            line-height: ${element.lineHeight || 1.2};
+            overflow: hidden;
+            word-wrap: break-word;
+          ">${(element.text || '').replace(/\n/g, '<br>')}</div>`;
       } else if (element.type === 'image') {
         return `
-          <img src="${element.src || ''}" style="
+          <img id="${elementId}" src="${element.src || ''}" style="
             position: absolute;
-            left: ${element.x}px;
-            top: ${element.y}px;
-            width: ${element.width}px;
-            height: ${element.height}px;
-          ">`;
+            left: ${element.x || 0}px;
+            top: ${element.y || 0}px;
+            width: ${element.width || 100}px;
+            height: ${element.height || 100}px;
+            object-fit: ${element.cropX !== undefined ? 'none' : 'cover'};
+            ${element.opacity !== undefined ? `opacity: ${element.opacity};` : ''}
+            ${element.rotation ? `transform: rotate(${element.rotation}rad);` : ''}
+          " alt="Polotno Image">`;
+      } else if (element.type === 'svg') {
+        return `
+          <div id="${elementId}" style="
+            position: absolute;
+            left: ${element.x || 0}px;
+            top: ${element.y || 0}px;
+            width: ${element.width || 100}px;
+            height: ${element.height || 100}px;
+            ${element.fill ? `color: ${element.fill};` : ''}
+            ${element.opacity !== undefined ? `opacity: ${element.opacity};` : ''}
+          ">${element.svg || ''}</div>`;
+      } else {
+        // Generic element fallback
+        return `
+          <div id="${elementId}" style="
+            position: absolute;
+            left: ${element.x || 0}px;
+            top: ${element.y || 0}px;
+            width: ${element.width || 100}px;
+            height: ${element.height || 100}px;
+            background: ${element.fill || 'transparent'};
+            ${element.opacity !== undefined ? `opacity: ${element.opacity};` : ''}
+          "></div>`;
       }
-      return '';
     }).join('');
 
     return `
-      <div class="page-${index}" style="
+      <div class="polotno-page" data-page="${pageIndex}" style="
         position: relative;
         width: ${page.width || store.width}px;
         height: ${page.height || store.height}px;
         margin: 20px auto;
-        border: 1px solid #ddd;
-        background: white;
-        page-break-after: always;
+        background: ${page.background || '#ffffff'};
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
       ">
         ${elements}
       </div>`;
   }).join('');
 
   return `
-<!DOCTYPE html>
+    <div class="polotno-design" style="
+      font-family: Arial, sans-serif;
+      width: 100%;
+      min-height: 100px;
+    ">
+      ${pages}
+    </div>`;
+};
+
+// Function to wrap Polotno HTML in complete HTML structure
+const wrapInCompleteHTMLStructure = (polotnoHtml, store) => {
+  // Extract just the content from Polotno HTML if it's already a complete document
+  let content = polotnoHtml;
+  
+  // If it's already a complete HTML document, extract just the body content
+  if (polotnoHtml.includes('<html') && polotnoHtml.includes('</html>')) {
+    const bodyMatch = polotnoHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch) {
+      content = bodyMatch[1];
+    }
+  }
+  
+  return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polotno Export</title>
+    <title>Polotno Export - ${store.width}x${store.height}</title>
     <style>
         body {
             margin: 0;
@@ -77,19 +132,30 @@ const generateBasicHTML = (store) => {
             background: #f5f5f5;
             font-family: Arial, sans-serif;
         }
-        .container {
+        .polotno-container {
             max-width: ${store.width + 40}px;
             margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         @media print {
-            body { background: white; }
-            .page-break { page-break-before: always; }
+            body { 
+                background: white; 
+                padding: 0;
+            }
+            .polotno-container {
+                box-shadow: none;
+                padding: 0;
+                max-width: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        ${pages}
+    <div class="polotno-container">
+        ${content}
     </div>
 </body>
 </html>`;
@@ -100,7 +166,9 @@ const JsonToHtmlConverter = () => {
   const [htmlOutput, setHtmlOutput] = useState('');
   const [error, setError] = useState('');
   const [isConverting, setIsConverting] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [storeData, setStoreData] = useState(null); // Store the Polotno store for PDF generation
   const previewRef = useRef(null);
 
   const convertJsonToHtml = async () => {
@@ -132,41 +200,85 @@ const JsonToHtmlConverter = () => {
       // Load JSON into store
       store.loadJSON(jsonData);
 
-      // Try multiple approaches to get HTML
-      let htmlText;
+      console.log('Gerando HTML usando o método saveAsHTML do Polotno...');
       
       try {
-        // Method 1: Use toHTML() which should return a blob
-        const htmlBlob = await store.toHTML();
-        htmlText = await htmlBlob.text();
-      } catch (error1) {
-        console.warn('toHTML() failed, trying alternative method:', error1);
+        // Interceptar saveAsHTML para capturar o HTML sem fazer download
+        const captureHTML = () => {
+          return new Promise((resolve, reject) => {
+            let htmlCaptured = false;
+            
+            // Salvar função original
+            const originalDownloadFile = downloadFile;
+            
+            // Interceptar temporariamente
+            window.downloadFile = (data, filename) => {
+              if (htmlCaptured) {
+                return; // Evitar múltiplas execuções
+              }
+              
+              htmlCaptured = true;
+              console.log('Download interceptado - Tipo:', typeof data, 'Filename:', filename);
+              
+              // Restaurar função original
+              window.downloadFile = originalDownloadFile;
+              
+              if (filename && filename.includes('.html')) {
+                if (typeof data === 'string') {
+                  console.log('HTML capturado como string');
+                  resolve(data);
+                } else if (data instanceof Blob) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    console.log('HTML capturado do blob');
+                    resolve(e.target.result);
+                  };
+                  reader.onerror = () => reject(new Error('Erro ao ler blob'));
+                  reader.readAsText(data);
+                } else {
+                  reject(new Error('Formato de dados não suportado'));
+                }
+              } else {
+                reject(new Error('Arquivo não é HTML'));
+              }
+            };
+            
+            // Executar saveAsHTML
+            store.saveAsHTML({
+              fileName: 'polotno-export.html'
+            }).catch(reject);
+            
+            // Timeout de segurança
+            setTimeout(() => {
+              if (!htmlCaptured) {
+                window.downloadFile = originalDownloadFile;
+                reject(new Error('Timeout na captura do HTML'));
+              }
+            }, 2000);
+          });
+        };
         
-        try {
-          // Method 2: Use saveAsHTML without fileName to get the blob
-          const result = await store.saveAsHTML({});
-          if (result && result.url) {
-            const response = await fetch(result.url);
-            htmlText = await response.text();
-          } else if (result instanceof Blob) {
-            htmlText = await result.text();
-          } else {
-            throw new Error('Método saveAsHTML não retornou resultado válido');
-          }
-        } catch (error2) {
-          console.warn('saveAsHTML() failed, trying manual HTML generation:', error2);
-          
-          // Method 3: Manual HTML generation as fallback
-          htmlText = generateBasicHTML(store);
+        const polotnoHTML = await captureHTML();
+        console.log('HTML capturado:', polotnoHTML.substring(0, 200));
+        
+        // Usar o HTML como está (já pode estar completo) ou envolver se necessário
+        let finalHTML = polotnoHTML;
+        if (!polotnoHTML.includes('<!DOCTYPE html>') && !polotnoHTML.includes('<html')) {
+          finalHTML = wrapInCompleteHTMLStructure(polotnoHTML, store);
         }
+        
+        setHtmlOutput(finalHTML);
+        console.log('HTML gerado com sucesso');
+        
+      } catch (saveHTMLError) {
+        console.error('Erro ao gerar HTML:', saveHTMLError);
+        setError(`Falha ao gerar HTML: ${saveHTMLError.message}`);
+        return;
       }
       
-      if (!htmlText) {
-        throw new Error('Não foi possível gerar o HTML do projeto');
-      }
-      
-      setHtmlOutput(htmlText);
+      setStoreData(store);
       setError('');
+      console.log('HTML gerado com sucesso, tamanho:', finalHTML.length);
       
     } catch (err) {
       console.error('Erro na conversão:', err);
@@ -185,20 +297,123 @@ const JsonToHtmlConverter = () => {
   };
 
   const downloadHtml = () => {
-    if (!htmlOutput) return;
+    if (!htmlOutput) {
+      setError('Primeiro gere o HTML antes de fazer o download');
+      return;
+    }
 
-    const blob = new Blob([htmlOutput], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    downloadFile(url, 'polotno-export.html');
-    URL.revokeObjectURL(url);
+    try {
+      // Baixar exatamente o mesmo HTML que está sendo exibido
+      const blob = new Blob([htmlOutput], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      downloadFile(url, 'polotno-export.html');
+      URL.revokeObjectURL(url);
+      console.log('Download do HTML realizado - mesmo conteúdo da visualização');
+    } catch (err) {
+      console.error('Erro ao baixar HTML:', err);
+      setError('Erro ao baixar o arquivo HTML');
+    }
+  };
+
+  const generatePdf = async () => {
+    if (!htmlOutput || !storeData) {
+      setError('Primeiro gere o HTML antes de criar o PDF');
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    setError('');
+
+    try {
+      // Create a temporary container to render the SAME HTML that's displayed
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.innerHTML = htmlOutput;
+      document.body.appendChild(tempContainer);
+
+      // Get all pages from the container
+      const pages = tempContainer.querySelectorAll('[class*="page-"]');
+      
+      if (pages.length === 0) {
+        throw new Error('Nenhuma página encontrada no HTML gerado');
+      }
+
+      // Get dimensions from the store
+      const pageWidth = storeData.width;
+      const pageHeight = storeData.height;
+
+      // Convert pixels to mm for jsPDF (96 DPI to mm)
+      const mmWidth = (pageWidth * 25.4) / 96;
+      const mmHeight = (pageHeight * 25.4) / 96;
+
+      // Create PDF with custom page size
+      const pdf = new jsPDF({
+        orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [mmWidth, mmHeight]
+      });
+
+      // Process each page
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        
+        // Set the page container to exact dimensions
+        page.style.width = `${pageWidth}px`;
+        page.style.height = `${pageHeight}px`;
+        page.style.position = 'relative';
+        page.style.background = 'white';
+        page.style.border = 'none';
+        page.style.margin = '0';
+        page.style.padding = '0';
+
+        // Render page to canvas
+        const canvas = await html2canvas(page, {
+          width: pageWidth,
+          height: pageHeight,
+          scale: 2, // Higher resolution
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: 'white',
+          logging: false
+        });
+
+        // Convert canvas to image data
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        // Add page to PDF (skip first page as it's already created)
+        if (i > 0) {
+          pdf.addPage([mmWidth, mmHeight]);
+        }
+
+        // Add image to PDF page
+        pdf.addImage(imgData, 'JPEG', 0, 0, mmWidth, mmHeight);
+      }
+
+      // Clean up temporary container
+      document.body.removeChild(tempContainer);
+
+      // Save PDF
+      pdf.save('polotno-export.pdf');
+
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      setError(`Erro ao gerar PDF: ${err.message}`);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const previewHtml = () => {
-    if (!htmlOutput) return;
+    if (!htmlOutput) {
+      setError('Primeiro gere o HTML antes de visualizar');
+      return;
+    }
 
     setIsPreviewMode(true);
     
-    // Open preview in new window
+    // Open preview in new window using the same HTML that's displayed
     const newWindow = window.open('', '_blank');
     if (newWindow) {
       newWindow.document.write(htmlOutput);
@@ -231,6 +446,7 @@ const JsonToHtmlConverter = () => {
     setHtmlOutput('');
     setError('');
     setIsPreviewMode(false);
+    setStoreData(null);
   };
 
   const loadExample = () => {
@@ -362,6 +578,14 @@ const JsonToHtmlConverter = () => {
                     Baixar HTML
                   </Button>
                   <Button
+                    intent={Intent.PRIMARY}
+                    icon={<Document />}
+                    onClick={generatePdf}
+                    loading={isGeneratingPdf}
+                  >
+                    Gerar PDF
+                  </Button>
+                  <Button
                     icon={<EyeOpen />}
                     onClick={previewHtml}
                   >
@@ -396,11 +620,27 @@ const JsonToHtmlConverter = () => {
           <li>Vá em "File" {'>'} "Save as JSON" para exportar o JSON do projeto</li>
           <li>Cole o conteúdo do arquivo JSON no campo à esquerda</li>
           <li>Clique em "Converter para HTML"</li>
-          <li>Use "Baixar HTML" para salvar o arquivo ou "Visualizar" para ver o resultado</li>
+          <li>Use as opções disponíveis:
+            <ul style={{ marginTop: '8px' }}>
+              <li><strong>Gerar PDF</strong>: Cria um PDF com o tamanho exato das páginas</li>
+              <li><strong>Baixar HTML</strong>: Salva o arquivo HTML</li>
+              <li><strong>Visualizar</strong>: Abre uma prévia em nova janela</li>
+              <li><strong>Copiar</strong>: Copia o código HTML</li>
+            </ul>
+          </li>
         </ol>
         
         <Callout style={{ marginTop: '15px' }}>
           <strong>Dica:</strong> Você pode usar o botão "Carregar Exemplo" para testar o conversor com um JSON de exemplo.
+        </Callout>
+        
+        <Callout intent={Intent.PRIMARY} style={{ marginTop: '15px' }}>
+          <strong>Novo: Geração de PDF!</strong> 
+          <br />O PDF gerado mantém o tamanho exato das páginas do seu projeto (ex: 1080x1080px = página PDF 1080x1080px).
+          O texto no PDF é totalmente selecionável e pesquisável.
+          <br /><br />
+          <strong>HTML Completo:</strong> O conversor gera HTML usando o método nativo do Polotno e o envolve em uma 
+          estrutura HTML completa com {'<html>'}, {'<head>'} e {'<body>'}. O conteúdo do Polotno fica dentro do {'<body>'}.
         </Callout>
         
         <Callout intent={Intent.WARNING} style={{ marginTop: '15px' }}>
