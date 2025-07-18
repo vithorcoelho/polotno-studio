@@ -68,6 +68,13 @@ export const FileMenu = observer(({ store, project }) => {
                 downloadFile(url, 'polotno.json');
               }}
             />
+            <MenuItem
+              icon={<Import />}
+              text="JSON to HTML Converter"
+              onClick={() => {
+                window.open('/converter.html', '_blank');
+              }}
+            />
 
             <MenuDivider />
             <MenuItem text="Language" icon={<Translate />}>

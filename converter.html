@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Conversor JSON para HTML - Polotno Studio"
+    />
+    <title>Conversor JSON para HTML - Polotno</title>
+    
+    <!-- Blueprint CSS -->
+    <link
+      href="https://unpkg.com/@blueprintjs/core@5/lib/css/blueprint.css"
+      rel="stylesheet"
+    />
+    
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+          "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-color: #f5f8fa;
+      }
+
+      code {
+        font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+          monospace;
+      }
+
+      .navbar {
+        background-color: #394b59;
+        padding: 10px 20px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      }
+
+      .navbar h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .navbar a {
+        color: #48aff0;
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .navbar a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <h1>Conversor JSON para HTML - Polotno</h1>
+      <a href="/">← Voltar ao Polotno Studio</a>
+    </nav>
+    
+    <noscript>Você precisa habilitar JavaScript para usar este conversor.</noscript>
+    <div id="converter-root"></div>
+
+    <script type="module" src="/src/converter-main.jsx"></script>
+  </body>
+</html>
